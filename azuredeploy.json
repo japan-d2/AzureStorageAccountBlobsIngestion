@@ -82,23 +82,6 @@
       }
     },	
     {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2018-02-01",
-      "name": "[variables('FunctionName')]",
-      "location": "[resourceGroup().location]",
-      "sku": {
-        "name": "Y1",
-        "tier": "Dynamic"
-      },
-      "kind": "functionapp",
-      "properties": {
-        "name": "[variables('FunctionName')]",
-        "workerSize": "0",
-        "workerSizeId": "0",
-        "numberOfWorkers": "1"
-      }
-    },
-    {
       "type": "Microsoft.Storage/storageAccounts/blobServices",
       "apiVersion": "2019-06-01",
       "name": "[concat(variables('StorageAccountName'), '/default')]",
