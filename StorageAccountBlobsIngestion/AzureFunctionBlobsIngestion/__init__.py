@@ -47,7 +47,7 @@ def post_data(body):
     content_length = len(body)
     signature = build_signature(CUSTOMER_ID, SHARED_KEY, rfc1123date, content_length, method, content_type, resource)
     uri = logAnalyticsUri + resource + "?api-version=2016-04-01"
-    logging.info(f"logAnalyticsUri: {}", logAnalyticsUri)
+    logging.info(f"logAnalyticsUri: {logAnalyticsUri}")
     headers = {
         'content-type': content_type,
         'Authorization': signature,
@@ -56,7 +56,7 @@ def post_data(body):
     }
     response = requests.post(uri,data=body, headers=headers)
     if (response.status_code >= 200 and response.status_code <= 299):
-        logging.info(f"response.status_code: {response.status_code}", response.status_code)
+        logging.info(f"response.status_code: {response.status_code}")
         return response.status_code
     else:
         logging.warn("Events are not processed into Azure. Response code: {}".format(response.status_code))
