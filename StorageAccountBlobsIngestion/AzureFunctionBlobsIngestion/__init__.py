@@ -9,90 +9,24 @@ import hashlib
 import os
 import logging
 import re
-from .state_manager import StateManager
+from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import generate_blob_sas, AccountSasPermissions
 
-#test2
-customer_id = os.environ['WorkspaceID']
-shared_key = os.environ['WorkspaceKey']
-confluence_token = os.environ['ConfluenceAccessToken']
-confluence_username = os.environ['ConfluenceUsername']
-confluence_homesite_name = os.environ['ConfluenceHomeSiteName']
-connection_string = os.environ['AzureWebJobsStorage']
-log_type = 'Confluence_Audit'
-confluence_uri_audit = "https://" + confluence_homesite_name + ".atlassian.net/wiki/rest/api/audit"
-logAnalyticsUri = os.environ.get('logAnalyticsUri')
+CUSTOMER_ID = os.environ['WorkspaceId']
+SHARED_KEY = os.environ['WorkspaceKey']
+ACCOUNT_KEY=os.environ['AccountKey']
+# connection_string = os.environ['AzureWebJobsStorage']
+log_type = 'Auth0Logs'
+logAnalyticsUri = os.environ.get('LAURI')
 
 if ((logAnalyticsUri in (None, '') or str(logAnalyticsUri).isspace())):    
-    logAnalyticsUri = 'https://' + customer_id + '.ods.opinsights.azure.com'
+    logAnalyticsUri = 'https://' + CUSTOMER_ID + '.ods.opinsights.azure.com'
 
 pattern = r"https:\/\/([\w\-]+)\.ods\.opinsights\.azure.([a-zA-Z\.]+)$"
 match = re.match(pattern,str(logAnalyticsUri))
 if(not match):
-    raise Exception("Invalid Log Analytics Uri.")
+    raise Exception(f"Invalid Log Analytics Uri: {logAnalyticsUri}",)
 
-def generate_date():
-    # current_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) - datetime.timedelta(minutes=10)
-    current_timestamp = int(datetime.datetime.utcnow().timestamp()*1000)
-    state = StateManager(connection_string=connection_string)
-    past_time = state.get()
-    past_timestamp = 0
-    if past_time is not None and past_time != "":
-        past_timestamp = int(past_time)
-        logging.info("The last time point is: {}".format(past_timestamp))
-    else:
-        logging.info("There is no last time point, trying to get events for last hour.")
-        # past_time = (current_time - datetime.timedelta(minutes=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        past_timestamp = (current_timestamp - 3600000) #3600s
-    # state.post(current_time.strftime("%Y-%m-%dT%H:%M:%SZ"))
-    logging.info("generate time {} ~ {}".format(past_timestamp, current_timestamp))
-    state.post(str(current_timestamp))
-    # return (past_time, current_time.strftime("%Y-%m-%dT%H:%M:%SZ"))
-    return (past_timestamp, current_timestamp)
-
-
-def get_result_request(offset,limit,from_time,to_time):
-    try:
-        r = requests.get(url=confluence_uri_audit,
-                         headers={'Accept': 'application/json'},
-                         auth=HTTPBasicAuth(confluence_username, confluence_token),
-                         params={
-                             "start": offset,
-                             "limit": limit,
-                             "startDate": from_time,
-                             "endDate": to_time
-                         })
-        if r.status_code == 200:
-            return r.json().get("results")
-        elif r.status_code == 401:
-            logging.error("The authentication credentials are incorrect or missing. Error code: {}".format(r.status_code))
-        elif r.status_code == 403:
-            logging.error("The user does not have the required permissions or Confluence products are on free plans. Audit logs are available when at least one Confluence product is on a paid plan. Error code: {}".format(r.status_code))
-        else:
-            logging.error("Something wrong. Error code: {}".format(r.status_code))
-    except Exception as err:
-        logging.error("Something wrong. Exception error text: {}".format(err))
-
-
-def get_result(time_range):
-    from_time = time_range[0]
-    to_time = time_range[1]
-    offset = 0
-    limit = 1000
-    element_count = None
-    global_element_count = 0
-    while element_count != 0:
-        result = get_result_request(offset,limit,from_time,to_time)
-        element_count = len(result)
-        if offset == 0 and element_count == 0:
-            logging.info("Logs not founded. Time period: from {} to {}.".format(from_time,to_time))
-        elif offset != 0 and element_count != 0:
-            logging.info("Processing {} events".format(element_count))
-        offset = offset + limit
-        if element_count > 0:
-            post_status_code = post_data(json.dumps(result))
-            if post_status_code is not None:
-                global_element_count = global_element_count + element_count
-    logging.info("Processed {} events to Azure Sentinel. Time period: from {} to {}.".format(global_element_count,from_time, to_time))
 
 
 def build_signature(customer_id, shared_key, date, content_length, method, content_type, resource):
@@ -111,8 +45,9 @@ def post_data(body):
     resource = '/api/logs'
     rfc1123date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     content_length = len(body)
-    signature = build_signature(customer_id, shared_key, rfc1123date, content_length, method, content_type, resource)
+    signature = build_signature(CUSTOMER_ID, SHARED_KEY, rfc1123date, content_length, method, content_type, resource)
     uri = logAnalyticsUri + resource + "?api-version=2016-04-01"
+    logging.info(f"logAnalyticsUri: {}", logAnalyticsUri)
     headers = {
         'content-type': content_type,
         'Authorization': signature,
@@ -121,15 +56,56 @@ def post_data(body):
     }
     response = requests.post(uri,data=body, headers=headers)
     if (response.status_code >= 200 and response.status_code <= 299):
+        logging.info(f"response.status_code: {response.status_code}", response.status_code)
         return response.status_code
     else:
         logging.warn("Events are not processed into Azure. Response code: {}".format(response.status_code))
+        logging.warn("Events are not processed into Azure. Response error: {}".format(response.reason))
         return None
 
+def gen_sas_url(url):
 
-def main(mytimer: func.TimerRequest)  -> None:
-    if mytimer.past_due:
-        logging.info('The timer is past due!')
+    m = re.match(r"https:\/\/(.*)\.blob\.core\.windows\.net\/(.*?)\/(.*)", url)
+    # print(m.group(1))
+    # print(m.group(2))
+    # print(m.group(3))
+
+    account_name=m.group(1)
+    container_name=m.group(2)
+    blob_name=m.group(3)
+
+    # url = f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}"
+    sas_token = generate_blob_sas(
+        account_name=account_name,
+        account_key=ACCOUNT_KEY,
+        container_name=container_name,
+        blob_name=blob_name,
+        permission=AccountSasPermissions(read=True),
+        expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    )
+
+    url_with_sas = f"{url}?{sas_token}"
+    return url_with_sas
+
+
+def main(QueueItem: func.QueueMessage)  -> None:
+# def main():
     logging.info('Starting program')
-    get_result(generate_date())
 
+    msg = QueueItem.get_body().decode('utf-8')
+    logging.info(msg)
+
+    queueJson = json.loads(msg)
+    url = queueJson['data']['url']
+    logging.info(url)
+
+    blob_url = gen_sas_url(url)
+
+    response = requests.get(blob_url)
+    logging.info(response.content)
+
+    post_data(response.content)
+
+
+# if __name__ == "__main__":
+#     main()

@@ -2,11 +2,11 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "FunctionName": {
-      "defaultValue": "StorageAccountBlobsIngestion",
+    "LogStorageAccountName": {
+      "defaultValue": "jd2auth0logs",
       "type": "string",
       "metadata": {
-        "description": "Specifies the name of the Function App."
+        "description": "Specifies the name of the log Storage Account."
       }
     },
     "WorkspaceId": {
@@ -23,7 +23,7 @@
     }	
   },
   "variables": {
-    "FunctionName": "[concat(toLower(parameters('FunctionName')), uniqueString(resourceGroup().id), uniqueString(subscription().id))]",
+    "FunctionName": "[concat(toLower(parameters('LogStorageAccountName')), uniqueString(resourceGroup().id), uniqueString(subscription().id))]",
 	"StorageAccountName":"[concat(substring(variables('FunctionName'), 0, 20), 'sa')]",
 	"KeyVaultName": "[concat(substring(variables('FunctionName'), 0, 20), 'kv')]",
 	"LogAnalyticsWorkspaceKey": "LogAnalyticsWorkspaceKey",
@@ -180,7 +180,8 @@
             "WorkspaceKey": "[concat('@Microsoft.KeyVault(SecretUri=', reference(variables('LogAnalyticsWorkspaceKey')).secretUriWithVersion, ')')]",			
             "LATableName": "Auth0Logs",
             "StorageQueueName": "variables('StorageQueueName')",
-            "LAURI": "[variables('LogAnaltyicsUri')]",			
+            "LAURI": "[variables('LogAnaltyicsUri')]",
+            "AccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]",
             "WEBSITE_RUN_FROM_PACKAGE": "https://github.com/nevermoe/AzureStorageAccountBlobsIngestion/raw/main/StorageAccountBlobsIngestion/AzureFunctionBlobsIngestion.zip"
           }
         }
