@@ -93,7 +93,7 @@ def main(QueueItem: func.QueueMessage)  -> None:
     logging.info('Starting program')
 
     msg = QueueItem.get_body().decode('utf-8')
-    logging.info(msg)
+    # logging.info(msg)
 
     queueJson = json.loads(msg)
     url = queueJson['data']['url']
@@ -102,7 +102,7 @@ def main(QueueItem: func.QueueMessage)  -> None:
     blob_url = gen_sas_url(url)
 
     response = requests.get(blob_url)
-    logging.info(response.content)
+    # logging.info(response.content)
 
     post_data(response.content)
 
