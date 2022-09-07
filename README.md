@@ -18,12 +18,9 @@ This custom Azure Sentinel Data connector ingests Azure Storage Account Blobs to
    
 3. Enter the following value in the ARM template deployment
 	```
-	"Function App Name": Function App Name
+	"Storage Account Name": Storage Account Name
 	"Workspace Id": Azure Log Analytics Workspace Id​
 	"Workspace Key": Azure Log Analytics Workspace Key
 	```
-
-## Configuration Steps
-
-1. Pre-requisites deployment step created Azure Storage Account called ```<<Function App Name>><<uniqueid>>sa``` and "logssource" container, 
+4.Send auth0 log to "logssource" container in ```<<Storage Account Name>><<uniqueid>>sa```.
 
