@@ -22,5 +22,12 @@ This custom Azure Sentinel Data connector ingests Azure Storage Account Blobs to
 	"Workspace Id": Azure Log Analytics Workspace Id​
 	"Workspace Key": Azure Log Analytics Workspace Key
 	```
-4.Send auth0 log to "logssource" container in ```<<Storage Account Name>><<uniqueid>>sa```.
+4. Deploy function app:
+	```
+	git clone https://github.com/nevermoe/AzureStorageAccountBlobsIngestion
+	cd AzureStorageAccountBlobsIngestion/StorageAccountBlobsIngestion
+	func azure functionapp publish {functionapp name}  --python
+	```
+	Function app name is in the format: ```<<Storage Account Name>><<uniqueid>>ew```
+5. Send auth0 log to "logssource" container in ```<<Storage Account Name>><<uniqueid>>sa```.
 
