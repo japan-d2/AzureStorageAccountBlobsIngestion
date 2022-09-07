@@ -6,7 +6,7 @@ This custom Azure Sentinel Data connector ingests Azure Storage Account Blobs to
 ## **Pre-requisites**
 
 1. Click on Deploy to Azure (For both Commercial & Azure GOV)  
-   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fnevermoe%2FAzureStorageAccountBlobsIngestion%2Fmain%2Fazuredeploy.json" target="_blank">
+   <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fjapan-d2%2FAzureStorageAccountBlobsIngestion%2Fmain%2Fazuredeploy.json" target="_blank">
     <img src="https://aka.ms/deploytoazurebutton"/>
 	</a>
   
@@ -24,7 +24,7 @@ This custom Azure Sentinel Data connector ingests Azure Storage Account Blobs to
 	```
 4. Deploy function app:
 	```
-	git clone https://github.com/nevermoe/AzureStorageAccountBlobsIngestion
+	git clone https://github.com/japan-d2/AzureStorageAccountBlobsIngestion
 	cd AzureStorageAccountBlobsIngestion/StorageAccountBlobsIngestion
 	func azure functionapp publish {functionapp name}  --python
 	```

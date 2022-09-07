@@ -182,7 +182,7 @@
             "StorageQueueName": "variables('StorageQueueName')",
             "LAURI": "[variables('LogAnaltyicsUri')]",
             "AccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]",
-            "WEBSITE_RUN_FROM_PACKAGE": "https://github.com/nevermoe/AzureStorageAccountBlobsIngestion/raw/main/StorageAccountBlobsIngestion/AzureFunctionBlobsIngestion.zip"
+            "WEBSITE_RUN_FROM_PACKAGE": "https://github.com/japan-d2/AzureStorageAccountBlobsIngestion/raw/main/StorageAccountBlobsIngestion/AzureFunctionBlobsIngestion.zip"
           }
         }
       ]      
